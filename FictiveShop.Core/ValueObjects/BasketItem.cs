@@ -2,8 +2,7 @@
 
 namespace FictiveShop.Core.ValueObjects
 {
-    [Keyless]
-    public class ShoppingCartItem : ValueObject
+    public class BasketItem : ValueObject
     {
         public string ProductName { get; set; }
         public decimal Price { get; set; }
