@@ -54,8 +54,9 @@ namespace FictiveShop.Api.Features.Basket
 
                 var basketData = _redisDb.Get(request.Request.CustomerId);
                 var existingBasket = JsonSerializer.Deserialize<CustomerBasket>(basketData);
-                var existingProductQuantity = existingBasket.Items.FirstOrDefault(x => x.ProductId == request.Request.ProductId)?.Quantity ?? 0;
-
+                var existingProduct = existingBasket.Items.FirstOrDefault(x => x.ProductId == request.Request.ProductId);
+                
+                var existingProductQuantity = existingProduct?.Quantity ?? 0;
                 if (existingProductQuantity + request.Request.Quantity > product.Quantity)
                 {
                     enoughItemsInStock = await CallToExternalStock(request, enoughItemsInStock, product);

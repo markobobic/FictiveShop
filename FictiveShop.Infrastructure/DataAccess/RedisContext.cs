@@ -31,7 +31,15 @@ namespace FictiveShop.Infrastructure.DataAccess
             var expiryTime = DateTime.UtcNow.Add(expiry);
             try
             {
-                data.Add(key, new(value, expiryTime));
+                if (!data.ContainsKey(key))
+                {
+                    data.Add(key, new(value, expiryTime));
+                }
+                else
+                {
+                    data[key] = new(value, expiryTime);
+                }
+                
                 return true;
             }
             catch (Exception)

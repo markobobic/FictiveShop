@@ -1,5 +1,6 @@
 ﻿using FictiveShop.Core.Domain;
 using FictiveShop.Core.Dtos;
+using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
 using FictiveShop.Infrastructure.DataAccess;
@@ -27,9 +28,8 @@ namespace FictiveShop.Infrastructure.Services
             if (updateProduct is not null)
             {
                 updateProduct.Quantity += request.Quantity;
-
                 return _redisDb.Set(request.CustomerId,
-                                     JsonSerializer.Serialize(this),
+                                     JsonSerializer.Serialize(customerBasket),
                                      TimeSpan.FromDays(ThirtyDays));
             }
 
@@ -62,7 +62,7 @@ namespace FictiveShop.Infrastructure.Services
                         };
 
             isUpdated = _redisDb.Set(request.CustomerId,
-                                     JsonSerializer.Serialize(this),
+                                     JsonSerializer.Serialize(customerBasket),
                                      TimeSpan.FromDays(ThirtyDays));
             return isUpdated;
         }

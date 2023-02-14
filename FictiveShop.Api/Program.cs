@@ -2,6 +2,7 @@ using FictiveShop.Core.Domain;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Infrastructure.DataAccess;
 using FictiveShop.Infrastructure.Repositories;
+using FictiveShop.Infrastructure.Services;
 using MediatR;
 using System.Reflection;
 
@@ -12,7 +13,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<FictiveShopDbContext>();
 builder.Services.AddSingleton<IInMemoryRedis, RedisContext>();
-builder.Services.AddSingleton<IRepository<Product>, ProductsRepository>();
+builder.Services.AddTransient<IRepository<Product>, ProductsRepository>();
+builder.Services.AddTransient<IBasketService, BasketService>();
 
 builder.Services.AddMediatR(Assembly.Load("FictiveShop.Infrastructure"));
 builder.Services.AddMediatR(Assembly.Load("FictiveShop.Api"));
