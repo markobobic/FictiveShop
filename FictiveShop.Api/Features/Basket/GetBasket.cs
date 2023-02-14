@@ -25,8 +25,8 @@ namespace FictiveShop.Api.Features.Basket
 
             public async Task<BasketResponse> Handle(Query request, CancellationToken cancellationToken)
             {
-                var data = _redis.Get(request.CustomerId);
-                var customerBasket = data.IsNullOrWhiteSpace() ? null : JsonSerializer.Deserialize<CustomerBasket>(data);
+                var basketJson = _redis.Get(request.CustomerId);
+                var customerBasket = basketJson.IsNullOrWhiteSpace() ? null : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
                 Guard.Against.Null(customerBasket, nameof(customerBasket));
                 return new BasketResponse { Items = customerBasket.Items };
             }

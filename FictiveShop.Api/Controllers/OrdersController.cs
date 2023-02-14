@@ -1,7 +1,5 @@
-﻿using FictiveShop.Api.Features.Basket;
-using FictiveShop.Core.Dtos;
+﻿using FictiveShop.Api.Features.Orders;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FictiveShop.Api.Controllers
@@ -18,10 +16,10 @@ namespace FictiveShop.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostOrder(BasketUpdateDto request)
+        public async Task<IActionResult> PostOrder(CreateOrder.OrderRequest request)
         {
-            var basket = await _mediator.Send(new AddOrUpdateBasket.Command { Request = request });
-            if (basket.IsBasketUpdated is false) return StatusCode(StatusCodes.Status500InternalServerError);
+            var basket = await _mediator.Send(new CreateOrder.Command { Request = request });
+
             return Ok(basket);
         }
     }
