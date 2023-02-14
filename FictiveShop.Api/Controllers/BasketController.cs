@@ -1,4 +1,5 @@
-﻿using FictiveShop.Infrastructure.Basket;
+﻿using FictiveShop.Api.Features.Basket;
+using FictiveShop.Core.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,9 +24,9 @@ namespace FictiveShop.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddToBasket(AddToBasket.BasketUpdateRequest request)
+        public async Task<IActionResult> AddToBasket(BasketUpdateDto request)
         {
-            var basket = await _mediator.Send(new AddToBasket.Command { Request = request });
+            var basket = await _mediator.Send(new AddOrUpdateBasket.Command { Request = request });
             if (basket.IsBasketUpdated is false) return StatusCode(StatusCodes.Status500InternalServerError);
             return Ok(basket);
         }

@@ -6,6 +6,6 @@ namespace FictiveShop.Core.Domain
     {
         public required string Name { get; set; }
         public required Price Price { get; set; }
-        public required int Quantity { get; init; }
+        public required int Quantity { get; set; }
     }
 }
