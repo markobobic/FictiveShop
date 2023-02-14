@@ -6,8 +6,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR" Version="11.1.0" />
+    <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.2" />
+    <PackageReference Include="RavenDB.Client" Version="5.4.101" />
+    <PackageReference Include="RavenDB.Database" Version="3.5.9" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.90" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FictiveShop.Core\FictiveShop.Core.csproj" />
+    <ProjectReference Include="..\FictiveShop.Infrastructure\FictiveShop.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

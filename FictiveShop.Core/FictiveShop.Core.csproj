@@ -6,7 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="7.0.2" />
     <PackageReference Include="NUlid" Version="1.7.1" />
+	  <PackageReference Include="Ardalis.GuardClauses" Version="4.0.1" />
+
+
   </ItemGroup>
 
 </Project>

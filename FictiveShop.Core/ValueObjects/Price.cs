@@ -1,5 +1,8 @@
-﻿namespace FictiveShop.Core.ValueObjects
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace FictiveShop.Core.ValueObjects
 {
+    [Keyless]
     public class Price : ValueObject
     {
         public Price(decimal amount, string currency)

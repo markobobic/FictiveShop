@@ -1,6 +1,6 @@
 ﻿namespace FictiveShop.Core.Domain
 {
-    public class Order
+    public class Order : BaseEntity
     {
     }
 }

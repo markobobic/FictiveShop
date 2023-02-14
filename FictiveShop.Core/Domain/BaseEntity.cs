@@ -4,6 +4,6 @@ namespace FictiveShop.Core.Domain
 {
     public abstract class BaseEntity
     {
-        public Ulid Id { get; init; } = Ulid.NewUlid();
+        public string Id { get; init; } = Ulid.NewUlid().ToString();
     }
 }
