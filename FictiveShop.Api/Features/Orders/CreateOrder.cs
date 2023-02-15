@@ -40,6 +40,20 @@ namespace FictiveShop.Api.Features.Orders
                 ApplyDiscount(customerBasket, request.Request, order);
                 _orderRepository.Create(order);
 
+                UpdateQuantity(customerBasket);
+
+                ClearBasket(request);
+
+                return new()
+                {
+                    AppliedDiscount = order.AppliedDiscount,
+                    OrderId = order.Id,
+                    TotalAmount = order.TotalAmount
+                };
+            }
+
+            private void UpdateQuantity(CustomerBasket customerBasket)
+            {
                 foreach (var basketItem in customerBasket.Items)
                 {
                     var product = _productsRepository.GetById(basketItem.ProductId);
@@ -50,20 +64,17 @@ namespace FictiveShop.Api.Features.Orders
                     product.Quantity -= basketItem.Quantity;
                     _productsRepository.Update(product);
                 }
+            }
 
-                return new()
-                {
-                    AppliedDiscount = order.AppliedDiscount,
-                    OrderId = order.Id,
-                    TotalAmount = order.TotalAmount
-                };
+            private void ClearBasket(Command request)
+            {
+                _redisDb.Delete(request.Request.CustomerId);
             }
 
             private void ApplyDiscount(CustomerBasket customerBasket, OrderRequest request, Order order)
             {
                 var hour = DateTime.Now.Hour;
 
-                hour = 21;
                 if (hour == _4Pm || hour == _5Pm)
                 {
                     var lastDigit = request.PhoneNumber.ExtractNumber().Last().ToString().ToInt();
