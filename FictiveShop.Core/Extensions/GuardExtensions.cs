@@ -1,4 +1,5 @@
 ﻿using Ardalis.GuardClauses;
+using FictiveShop.Core.Exceptions;
 
 namespace FictiveShop.Core.Extensions
 {

@@ -2,6 +2,7 @@
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
+using FluentValidation;
 using MediatR;
 using System.Text.Json;
 
@@ -12,6 +13,14 @@ namespace FictiveShop.Api.Features.Basket
         public class Query : IRequest<BasketResponse>
         {
             public string CustomerId { get; set; }
+        }
+
+        public class CommandValidator : AbstractValidator<Query>
+        {
+            public CommandValidator()
+            {
+                RuleFor(x => x.CustomerId).NotNull().NotEmpty();
+            }
         }
 
         public class QueryHandler : IRequestHandler<Query, BasketResponse>

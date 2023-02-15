@@ -18,9 +18,9 @@ namespace FictiveShop.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> PostOrder(CreateOrder.OrderRequest request)
         {
-            var basket = await _mediator.Send(new CreateOrder.Command { Request = request });
+            var order = await _mediator.Send(new CreateOrder.Command { Request = request });
 
-            return Ok(basket);
+            return Ok(order);
         }
     }
 }

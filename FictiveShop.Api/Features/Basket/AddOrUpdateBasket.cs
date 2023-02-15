@@ -5,6 +5,7 @@ using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
 using FictiveShop.Infrastructure.DataAccess;
+using FluentValidation;
 using MediatR;
 using Moq;
 using System.Text.Json;
@@ -16,6 +17,15 @@ namespace FictiveShop.Api.Features.Basket
         public class Command : IRequest<BasketUpdateResponse>
         {
             public BasketUpdateDto Request { get; set; }
+        }
+
+        public class CommandValidator : AbstractValidator<Command>
+        {
+            public CommandValidator()
+            {
+                RuleFor(x => x.Request.ProductId).NotNull().NotEmpty();
+                RuleFor(x => x.Request.Quantity).GreaterThan(0);
+            }
         }
 
         public class Handler : IRequestHandler<Command, BasketUpdateResponse>
@@ -55,7 +65,7 @@ namespace FictiveShop.Api.Features.Basket
                 var basketData = _redisDb.Get(request.Request.CustomerId);
                 var existingBasket = JsonSerializer.Deserialize<CustomerBasket>(basketData);
                 var existingProduct = existingBasket.Items.FirstOrDefault(x => x.ProductId == request.Request.ProductId);
-                
+
                 var existingProductQuantity = existingProduct?.Quantity ?? 0;
                 if (existingProductQuantity + request.Request.Quantity > product.Quantity)
                 {

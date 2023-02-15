@@ -3,6 +3,7 @@ using FictiveShop.Core.Domain;
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
+using FluentValidation;
 using MediatR;
 using System.Text.Json;
 
@@ -13,6 +14,22 @@ namespace FictiveShop.Api.Features.Orders
         public class Command : IRequest<OrderCreatedResponse>
         {
             public OrderRequest Request { get; set; }
+        }
+
+        public class CommandValidator : AbstractValidator<Command>
+        {
+            public CommandValidator()
+            {
+                RuleFor(x => x.Request.AddressRequest.City).NotNull().NotEmpty().WithMessage("City isn't populated.");
+                RuleFor(x => x.Request.AddressRequest.HouseNumber).NotNull().NotEmpty().WithMessage("HouseNumber isn't populated.");
+                RuleFor(x => x.Request.AddressRequest.Street).NotNull().NotEmpty().WithMessage("Street isn't populated.");
+                RuleFor(x => x.Request.PhoneNumber).NotNull().NotEmpty().WithMessage("Phone isn't populated."); ;
+                RuleFor(x => x.Request.CustomerId)
+                    .NotEmpty()
+                    .NotNull()
+                    .Must(customerId => Guid.TryParse(customerId, out _))
+                    .WithMessage("CustomerId must be a valid GUID.");
+            }
         }
 
         public class Handler : IRequestHandler<Command, OrderCreatedResponse>
