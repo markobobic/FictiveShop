@@ -53,8 +53,10 @@ namespace FictiveShop.Api.Features.Orders
                 var customerBasket = basketJson.IsNullOrWhiteSpace() ? null : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
 
                 Guard.Against.Null(basketJson, nameof(basketJson), "Customer basket doesn't exists.");
-                var order = new Order();
-                ApplyDiscount(customerBasket, request.Request, order);
+
+                ApplyDiscount(customerBasket, request.Request);
+
+                var order = PopulateOrder(request, customerBasket);
                 _orderRepository.Create(order);
 
                 UpdateQuantity(customerBasket);
@@ -67,6 +69,21 @@ namespace FictiveShop.Api.Features.Orders
                     OrderId = order.Id,
                     TotalAmount = order.TotalAmount
                 };
+            }
+
+            private static Order PopulateOrder(Command request, CustomerBasket customerBasket)
+            {
+                var order = new Order();
+                order.TotalAmount = customerBasket.TotalPrice;
+                order.AppliedDiscount = customerBasket.DiscountAmount;
+                order.BasketItems = customerBasket.Items;
+                order.ShippingAddress = new Address()
+                {
+                    City = request.Request.AddressRequest.City,
+                    HouseNumber = request.Request.AddressRequest.HouseNumber,
+                    Street = request.Request.AddressRequest.Street
+                };
+                return order;
             }
 
             private void UpdateQuantity(CustomerBasket customerBasket)
@@ -88,7 +105,7 @@ namespace FictiveShop.Api.Features.Orders
                 _redisDb.Delete(request.Request.CustomerId);
             }
 
-            private void ApplyDiscount(CustomerBasket customerBasket, OrderRequest request, Order order)
+            private void ApplyDiscount(CustomerBasket customerBasket, OrderRequest request)
             {
                 var hour = DateTime.Now.Hour;
 
@@ -103,8 +120,6 @@ namespace FictiveShop.Api.Features.Orders
                         _ => 0m
                     };
                 }
-                order.TotalAmount = customerBasket.TotalPrice;
-                order.AppliedDiscount = customerBasket.DiscountAmount;
             }
         }
 
