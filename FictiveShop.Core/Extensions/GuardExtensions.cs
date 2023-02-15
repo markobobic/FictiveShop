@@ -16,5 +16,13 @@ namespace FictiveShop.Core.Extensions
             if (condition is false)
                 throw new Exception(errMsg);
         }
+
+        public static void OutOfStock(this IGuardClause guardClause, bool condition, string errMsg = "")
+        {
+            if (!condition)
+            {
+                throw new OutOfStockException(errMsg == string.Empty ? "Not enough items in stock." : errMsg);
+            }
+        }
     }
 }

@@ -36,7 +36,7 @@ namespace FictiveShop.Api.Features.Basket
             {
                 var basketJson = _redis.Get(request.CustomerId);
                 var customerBasket = basketJson.IsNullOrWhiteSpace() ? null : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
-                Guard.Against.Null(customerBasket, nameof(customerBasket));
+                Guard.Against.Null(customerBasket, nameof(customerBasket), $"No basket found for customer with ID {request.CustomerId}");
                 return new BasketResponse { Items = customerBasket.Items };
             }
         }

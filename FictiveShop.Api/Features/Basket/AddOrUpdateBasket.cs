@@ -33,12 +33,16 @@ namespace FictiveShop.Api.Features.Basket
             private readonly FictiveShopDbContext _efDb;
             private readonly IInMemoryRedis _redisDb;
             private readonly IBasketService _basketService;
+            private readonly ISupplierStockService _supplierStockService;
+            private readonly IHostEnvironment _env;
 
-            public Handler(FictiveShopDbContext efDb, IInMemoryRedis redisDb, IBasketService basketService)
+            public Handler(FictiveShopDbContext efDb, IInMemoryRedis redisDb, IBasketService basketService, ISupplierStockService supplierStockService, IHostEnvironment env)
             {
                 _efDb = efDb;
                 _redisDb = redisDb;
                 _basketService = basketService;
+                _supplierStockService = supplierStockService;
+                _env = env;
             }
 
             public async Task<BasketUpdateResponse> Handle(Command request, CancellationToken cancellationToken)
@@ -46,13 +50,13 @@ namespace FictiveShop.Api.Features.Basket
                 bool enoughItemsInStock = true, isUpdated = false;
                 var product = _efDb.Products.FirstOrDefault(x => x.Id == request.Request.ProductId);
 
-                Guard.Against.Null(product, nameof(product));
+                Guard.Against.Null(product, nameof(product), $"Product with ID: {request.Request.ProductId} doens't exist");
                 if (request.Request.Quantity > product.Quantity)
                 {
                     enoughItemsInStock = await CallToExternalStock(request, enoughItemsInStock, product);
                 }
 
-                Guard.Against.False(enoughItemsInStock, "Not enough items in stock.");
+                Guard.Against.OutOfStock(enoughItemsInStock);
 
                 if (_redisDb.Get(request.Request.CustomerId) is null)
                 {
@@ -72,7 +76,7 @@ namespace FictiveShop.Api.Features.Basket
                     enoughItemsInStock = await CallToExternalStock(request, enoughItemsInStock, product);
                 }
 
-                Guard.Against.False(enoughItemsInStock, "Not enough items in stock.");
+                Guard.Against.OutOfStock(enoughItemsInStock);
 
                 isUpdated = _basketService.UpdateBasket(existingBasket, request.Request, product);
                 return new BasketUpdateResponse { IsBasketUpdated = isUpdated };
@@ -80,6 +84,10 @@ namespace FictiveShop.Api.Features.Basket
 
             private async Task<bool> CallToExternalStock(Command request, bool enoughItemsInStock, Product product)
             {
+                if (_env.IsEnvironment("Test"))
+                {
+                    return await _supplierStockService.IsAvailableInStock(product.Id, request.Request.Quantity);
+                }
                 var mockSupplierStockService = new Mock<ISupplierStockService>();
                 mockSupplierStockService
                     .Setup(s => s.IsAvailableInStock(product.Id, request.Request.Quantity))

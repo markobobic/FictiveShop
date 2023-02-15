@@ -75,6 +75,7 @@ namespace FictiveShop.Api.Features.Orders
             {
                 var order = new Order();
                 order.TotalAmount = customerBasket.TotalPrice;
+                order.CustomerId = request.Request.CustomerId;
                 order.AppliedDiscount = customerBasket.DiscountAmount;
                 order.BasketItems = customerBasket.Items;
                 order.ShippingAddress = new Address()

@@ -21,6 +21,7 @@ builder.Services.AddTransient<IRepository<Product>, ProductsRepository>();
 builder.Services.AddTransient<IRepository<Order>, OrderRepository>();
 
 builder.Services.AddTransient<IBasketService, BasketService>();
+builder.Services.AddTransient<ISupplierStockService, SupplierStockService>();
 
 builder.Services.AddMediatR(Assembly.Load(Assemblies.FictiveShopInfrastructure));
 builder.Services.AddMediatR(Assembly.Load(Assemblies.FictiveShopApi));

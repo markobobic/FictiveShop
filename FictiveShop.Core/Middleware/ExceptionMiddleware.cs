@@ -1,4 +1,5 @@
-﻿using FictiveShop.Core.Exceptions;
+﻿using Ardalis.GuardClauses;
+using FictiveShop.Core.Exceptions;
 using FictiveShop.Core.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
@@ -30,7 +31,15 @@ namespace FictiveShop.Core.Middleware
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message);
-                var statusCode = HttpStatusCode.InternalServerError.ToInt();
+
+                var statusCode = ex switch
+                {
+                    NotFoundException => HttpStatusCode.NotFound.ToInt(),
+                    OutOfStockException => HttpStatusCode.Conflict.ToInt(),
+                    ValidatingException => HttpStatusCode.BadRequest.ToInt(),
+                    _ => HttpStatusCode.InternalServerError.ToInt()
+                };
+
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = statusCode;
 
