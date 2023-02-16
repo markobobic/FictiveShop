@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FictiveShop.Core", "..\Fict
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FictiveShop.Infrastructure", "..\FictiveShop.Infrastructure\FictiveShop.Infrastructure.csproj", "{453772FD-5BBE-4256-93CE-2A5A7062D67A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FictiveShop.Tests", "..\FictiveShop.Tests\FictiveShop.Tests.csproj", "{985622ED-B745-46AD-97F4-AE8585E62A68}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FictiveShop.Tests", "..\FictiveShop.Tests\FictiveShop.Tests.csproj", "{985622ED-B745-46AD-97F4-AE8585E62A68}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

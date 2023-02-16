@@ -5,24 +5,27 @@ using FictiveShop.Core.Dtos;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
 using FictiveShop.Infrastructure.DataAccess;
+using Microsoft.Extensions.Hosting;
 using Moq;
 using System.Text.Json;
 
 namespace FictiveShop.Tests.Basket
 {
-    public class AddOrUpdateBasketTests
+    public class AddOrUpdateBasket_Happy_Path
     {
         private readonly FictiveShopDbContext _dbContext;
         private readonly Mock<IInMemoryRedis> _redisMock;
         private readonly Mock<IBasketService> _basketServiceMock;
         private readonly Mock<ISupplierStockService> _supplierStockService;
+        private readonly Mock<IHostEnvironment> _env;
 
-        public AddOrUpdateBasketTests()
+        public AddOrUpdateBasket_Happy_Path()
         {
             _dbContext = new FictiveShopDbContext();
             _redisMock = new Mock<IInMemoryRedis>();
             _basketServiceMock = new Mock<IBasketService>();
             _supplierStockService = new Mock<ISupplierStockService>();
+            _env = new Mock<IHostEnvironment>();
         }
 
         [Fact]
@@ -54,8 +57,9 @@ namespace FictiveShop.Tests.Basket
             _basketServiceMock.Setup(s => s.UpdateBasket(customerBasket, command.Request, product)).Returns(true);
             _supplierStockService.Setup(s => s.IsAvailableInStock(product.Id, command.Request.Quantity))
                     .ReturnsAsync(true);
+            _env.Setup(r => r.EnvironmentName).Returns("Test");
 
-            var handler = new AddOrUpdateBasket.Handler(_dbContext, _redisMock.Object, _basketServiceMock.Object, _supplierStockService.Object, _);
+            var handler = new AddOrUpdateBasket.Handler(_dbContext, _redisMock.Object, _basketServiceMock.Object, _supplierStockService.Object, _env.Object);
 
             // Act
             var response = await handler.Handle(command, CancellationToken.None);

@@ -1,9 +1,7 @@
 ﻿using FictiveShop.Core.Domain;
 using FictiveShop.Core.Dtos;
-using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
-using FictiveShop.Infrastructure.DataAccess;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +12,6 @@ namespace FictiveShop.Infrastructure.Services
     public class BasketService : IBasketService
     {
         private readonly IInMemoryRedis _redisDb;
-        private readonly IRepository<Product> _productsRepistory;
         private const int ThirtyDays = 30;
 
         public BasketService(IInMemoryRedis redisDb)
@@ -42,7 +39,7 @@ namespace FictiveShop.Infrastructure.Services
             });
 
             return _redisDb.Set(request.CustomerId,
-                                    JsonSerializer.Serialize(this),
+                                    JsonSerializer.Serialize(customerBasket),
                                     TimeSpan.FromDays(ThirtyDays));
         }
 

@@ -2,20 +2,21 @@
 {
     public class CustomerBasket
     {
-        public List<BasketItem> Items { get; set; } = new();
-        public decimal DiscountPrecentege { get; set; } = 0;
-        public decimal DiscountAmount { get; set; } = 0;
-        public decimal TotalPrice => GetPrice();
+        public List<BasketItem> Items { get; set; }
 
-        private decimal GetPrice()
+        public BasketPrice GetTotalPrice(decimal discountPrecentage = 0)
         {
-            var totalPrice = Items.Sum(x => x.Quantity * x.Price);
-            if (DiscountPrecentege != 0)
+            var basketPrice = new BasketPrice
             {
-                DiscountAmount = totalPrice * DiscountPrecentege;
-                totalPrice = totalPrice * (1 - DiscountPrecentege);
+                TotalPrice = Items.Sum(x => x.Quantity * x.Price)
+            };
+
+            if (discountPrecentage != 0)
+            {
+                basketPrice.DiscountedPrice = basketPrice.TotalPrice * discountPrecentage;
+                basketPrice.SetTotalPrice(basketPrice.TotalPrice * (1 - discountPrecentage));
             }
-            return totalPrice;
+            return basketPrice;
         }
     }
 }

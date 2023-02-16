@@ -54,9 +54,9 @@ namespace FictiveShop.Api.Features.Orders
 
                 Guard.Against.Null(basketJson, nameof(basketJson), "Customer basket doesn't exists.");
 
-                ApplyDiscount(customerBasket, request.Request);
+                var discountPrecentage = GetDiscountPrecentage(customerBasket, request.Request);
 
-                var order = PopulateOrder(request, customerBasket);
+                var order = PopulateOrder(request, customerBasket, discountPrecentage);
                 _orderRepository.Create(order);
 
                 UpdateQuantity(customerBasket);
@@ -71,18 +71,21 @@ namespace FictiveShop.Api.Features.Orders
                 };
             }
 
-            private static Order PopulateOrder(Command request, CustomerBasket customerBasket)
+            private static Order PopulateOrder(Command request, CustomerBasket customerBasket, decimal discountPrecentage)
             {
-                var order = new Order();
-                order.TotalAmount = customerBasket.TotalPrice;
-                order.CustomerId = request.Request.CustomerId;
-                order.AppliedDiscount = customerBasket.DiscountAmount;
-                order.BasketItems = customerBasket.Items;
-                order.ShippingAddress = new Address()
+                var basketPrice = customerBasket.GetTotalPrice(discountPrecentage);
+                var order = new Order
                 {
-                    City = request.Request.AddressRequest.City,
-                    HouseNumber = request.Request.AddressRequest.HouseNumber,
-                    Street = request.Request.AddressRequest.Street
+                    TotalAmount = basketPrice.TotalPrice,
+                    CustomerId = request.Request.CustomerId,
+                    AppliedDiscount = basketPrice.DiscountedPrice,
+                    BasketItems = customerBasket.Items,
+                    ShippingAddress = new Address()
+                    {
+                        City = request.Request.AddressRequest.City,
+                        HouseNumber = request.Request.AddressRequest.HouseNumber,
+                        Street = request.Request.AddressRequest.Street
+                    }
                 };
                 return order;
             }
@@ -106,14 +109,14 @@ namespace FictiveShop.Api.Features.Orders
                 _redisDb.Delete(request.Request.CustomerId);
             }
 
-            private void ApplyDiscount(CustomerBasket customerBasket, OrderRequest request)
+            private decimal GetDiscountPrecentage(CustomerBasket customerBasket, OrderRequest request)
             {
                 var hour = DateTime.Now.Hour;
-
+                hour = 16;
                 if (hour == _4Pm || hour == _5Pm)
                 {
                     var lastDigit = request.PhoneNumber.ExtractNumber().Last().ToString().ToInt();
-                    customerBasket.DiscountPrecentege = lastDigit switch
+                    return lastDigit switch
                     {
                         0 => 0.3m,
                         var digit when digit % 2 == 0 => 0.2m,
@@ -121,6 +124,7 @@ namespace FictiveShop.Api.Features.Orders
                         _ => 0m
                     };
                 }
+                return 0;
             }
         }
 
