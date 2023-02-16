@@ -54,8 +54,8 @@ namespace FictiveShop.Api.Features.Orders
             {
                 var basketJson = _redisDb.Get(request.Request.CustomerId);
                 var customerBasket = basketJson.IsNullOrWhiteSpace()
-                    ? null :
-                    JsonSerializer.Deserialize<CustomerBasket>(basketJson);
+                    ? null
+                    : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
 
                 Guard.Against.Null(basketJson, nameof(basketJson), "Customer basket doesn't exists.");
 
