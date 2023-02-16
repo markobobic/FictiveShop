@@ -11,11 +11,11 @@ using System.Threading.Tasks;
 
 namespace FictiveShop.Infrastructure.Repositories
 {
-    public class OrderRepository : IRepository<Order>
+    public class OrdersRepository : IRepository<Order>
     {
         private readonly FictiveShopDbContext _db;
 
-        public OrderRepository(FictiveShopDbContext db)
+        public OrdersRepository(FictiveShopDbContext db)
         {
             _db = db;
         }

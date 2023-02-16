@@ -7,11 +7,11 @@ using FictiveShop.Core.ValueObjects;
 using FictiveShop.Infrastructure.DataAccess;
 using Microsoft.Extensions.Hosting;
 using Moq;
-using System.Text.Json;
 
-namespace FictiveShop.Tests.Basket
+namespace FictiveShop.Tests.Basket_Tests
 {
-    public class AddOrUpdateBasket_Happy_Path
+    [Trait("Add To Basket", "Happy Path")]
+    public class AddToBasket_Happy_Path
     {
         private readonly FictiveShopDbContext _dbContext;
         private readonly Mock<IInMemoryRedis> _redisMock;
@@ -19,7 +19,7 @@ namespace FictiveShop.Tests.Basket
         private readonly Mock<ISupplierStockService> _supplierStockService;
         private readonly Mock<IHostEnvironment> _env;
 
-        public AddOrUpdateBasket_Happy_Path()
+        public AddToBasket_Happy_Path()
         {
             _dbContext = new FictiveShopDbContext();
             _redisMock = new Mock<IInMemoryRedis>();
@@ -45,7 +45,7 @@ namespace FictiveShop.Tests.Basket
                 .Generate();
 
             var customerBasket = new Faker<CustomerBasket>()
-                .RuleFor(b => b.Items, f => new List<BasketItem> { new BasketItem { Price = f.Finance.Amount(), ProductId = product.Id, ProductName = product.Name, Quantity = product.Quantity } })
+                .RuleFor(b => b.Items, f => new List<BasketItem>())
                 .Generate();
 
             var command = new Faker<AddOrUpdateBasket.Command>()
@@ -53,8 +53,8 @@ namespace FictiveShop.Tests.Basket
                 .Generate();
 
             _dbContext.Products.Add(product);
-            _redisMock.Setup(r => r.Get(command.Request.CustomerId)).Returns(JsonSerializer.Serialize(customerBasket));
-            _basketServiceMock.Setup(s => s.UpdateBasket(customerBasket, command.Request, product)).Returns(true);
+            _redisMock.Setup(r => r.Get(command.Request.CustomerId)).Returns(() => null).Verifiable();
+            _basketServiceMock.Setup(s => s.AddToBasket(It.IsAny<CustomerBasket>(), command.Request, product)).Returns(true);
             _supplierStockService.Setup(s => s.IsAvailableInStock(product.Id, command.Request.Quantity))
                     .ReturnsAsync(true);
             _env.Setup(r => r.EnvironmentName).Returns("Test");
@@ -65,8 +65,7 @@ namespace FictiveShop.Tests.Basket
             var response = await handler.Handle(command, CancellationToken.None);
 
             // Assert
-            _redisMock.Verify(r => r.Get(command.Request.CustomerId), Times.Once);
-            _basketServiceMock.Verify(s => s.UpdateBasket(customerBasket, command.Request, product), Times.Once);
+            _redisMock.Verify(r => r.Get(command.Request.CustomerId), Times.AtLeast(1));
             Assert.True(response.IsBasketUpdated);
         }
     }

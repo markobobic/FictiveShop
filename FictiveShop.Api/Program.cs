@@ -17,11 +17,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<FictiveShopDbContext>();
 builder.Services.AddSingleton<IInMemoryRedis, RedisContext>();
-builder.Services.AddTransient<IRepository<Product>, ProductsRepository>();
-builder.Services.AddTransient<IRepository<Order>, OrderRepository>();
 
-builder.Services.AddTransient<IBasketService, BasketService>();
-builder.Services.AddTransient<ISupplierStockService, SupplierStockService>();
+builder.Services.AddScoped<IRepository<Product>, ProductsRepository>();
+builder.Services.AddScoped<IRepository<Order>, OrdersRepository>();
+builder.Services.AddScoped<IRepository<Customer>, CustomersRepository>();
+
+builder.Services.AddScoped<IBasketService, BasketService>();
+builder.Services.AddScoped<ISupplierStockService, SupplierStockService>();
 
 builder.Services.AddMediatR(Assembly.Load(Assemblies.FictiveShopInfrastructure));
 builder.Services.AddMediatR(Assembly.Load(Assemblies.FictiveShopApi));

@@ -1,4 +1,5 @@
 ﻿using Ardalis.GuardClauses;
+using FictiveShop.Api.Extensions;
 using FictiveShop.Core.Domain;
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
@@ -37,27 +38,33 @@ namespace FictiveShop.Api.Features.Orders
             private const int _4Pm = 16;
             private const int _5Pm = 17;
             private readonly IInMemoryRedis _redisDb;
-            private readonly IRepository<Order> _orderRepository;
+            private readonly IRepository<Order> _ordersRepository;
             private readonly IRepository<Product> _productsRepository;
+            private readonly IRepository<Customer> _customersRepository;
 
-            public Handler(IInMemoryRedis redisDb, IRepository<Order> ordersRepository, IRepository<Product> productsRepository)
+            public Handler(IInMemoryRedis redisDb, IRepository<Order> ordersRepository, IRepository<Product> productsRepository, IRepository<Customer> customerRepository)
             {
                 _redisDb = redisDb;
-                _orderRepository = ordersRepository;
+                _ordersRepository = ordersRepository;
                 _productsRepository = productsRepository;
+                _customersRepository = customerRepository;
             }
 
             public async Task<OrderCreatedResponse> Handle(Command request, CancellationToken cancellationToken)
             {
                 var basketJson = _redisDb.Get(request.Request.CustomerId);
-                var customerBasket = basketJson.IsNullOrWhiteSpace() ? null : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
+                var customerBasket = basketJson.IsNullOrWhiteSpace()
+                    ? null :
+                    JsonSerializer.Deserialize<CustomerBasket>(basketJson);
 
                 Guard.Against.Null(basketJson, nameof(basketJson), "Customer basket doesn't exists.");
 
-                var discountPrecentage = GetDiscountPrecentage(customerBasket, request.Request);
+                var discountPercentage = GetDiscountPrecentage(customerBasket, request.Request);
 
-                var order = PopulateOrder(request, customerBasket, discountPrecentage);
-                _orderRepository.Create(order);
+                _customersRepository.Create(request.Request.ToCustomer());
+
+                var order = request.ToOrder(customerBasket, discountPercentage);
+                _ordersRepository.Create(order);
 
                 UpdateQuantity(customerBasket);
 
@@ -69,25 +76,6 @@ namespace FictiveShop.Api.Features.Orders
                     OrderId = order.Id,
                     TotalAmount = order.TotalAmount
                 };
-            }
-
-            private static Order PopulateOrder(Command request, CustomerBasket customerBasket, decimal discountPrecentage)
-            {
-                var basketPrice = customerBasket.GetTotalPrice(discountPrecentage);
-                var order = new Order
-                {
-                    TotalAmount = basketPrice.TotalPrice,
-                    CustomerId = request.Request.CustomerId,
-                    AppliedDiscount = basketPrice.DiscountedPrice,
-                    BasketItems = customerBasket.Items,
-                    ShippingAddress = new Address()
-                    {
-                        City = request.Request.AddressRequest.City,
-                        HouseNumber = request.Request.AddressRequest.HouseNumber,
-                        Street = request.Request.AddressRequest.Street
-                    }
-                };
-                return order;
             }
 
             private void UpdateQuantity(CustomerBasket customerBasket)
@@ -104,15 +92,11 @@ namespace FictiveShop.Api.Features.Orders
                 }
             }
 
-            private void ClearBasket(Command request)
-            {
-                _redisDb.Delete(request.Request.CustomerId);
-            }
+            private void ClearBasket(Command request) => _redisDb.Delete(request.Request.CustomerId);
 
             private decimal GetDiscountPrecentage(CustomerBasket customerBasket, OrderRequest request)
             {
                 var hour = DateTime.Now.Hour;
-                hour = 16;
                 if (hour == _4Pm || hour == _5Pm)
                 {
                     var lastDigit = request.PhoneNumber.ExtractNumber().Last().ToString().ToInt();
