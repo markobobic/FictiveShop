@@ -1,10 +1,10 @@
 ﻿using FictiveShop.Core.Domain;
 using FictiveShop.Core.ValueObjects;
-using static FictiveShop.Api.Features.Orders.CreateOrder;
+using static FictiveShop.Core.Features.Orders.CreateOrder;
 
-namespace FictiveShop.Api.Extensions
+namespace FictiveShop.Core.Extensions
 {
-    public static class DtoExtensions
+    public static class MapExtensions
     {
         public static Customer ToCustomer(this OrderRequest request) => new Customer
         {

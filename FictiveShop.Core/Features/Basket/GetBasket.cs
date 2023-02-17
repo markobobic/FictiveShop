@@ -4,9 +4,14 @@ using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
 using FluentValidation;
 using MediatR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
-namespace FictiveShop.Api.Features.Basket
+namespace FictiveShop.Core.Features.Basket
 {
     public class GetBasket
     {

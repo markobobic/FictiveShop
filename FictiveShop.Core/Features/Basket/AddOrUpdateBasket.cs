@@ -4,13 +4,13 @@ using FictiveShop.Core.Dtos;
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
-using FictiveShop.Infrastructure.DataAccess;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Hosting;
 using Moq;
 using System.Text.Json;
 
-namespace FictiveShop.Api.Features.Basket
+namespace FictiveShop.Core.Features.Basket
 {
     public class AddOrUpdateBasket
     {
@@ -30,25 +30,32 @@ namespace FictiveShop.Api.Features.Basket
 
         public class Handler : IRequestHandler<Command, BasketUpdateResponse>
         {
-            private readonly FictiveShopDbContext _efDb;
+            private readonly IRepository<Product> _productsRepository;
             private readonly IInMemoryRedis _redisDb;
             private readonly IBasketService _basketService;
             private readonly ISupplierStockService _supplierStockService;
             private readonly IHostEnvironment _env;
+            private readonly IUnitOfWork _unitOfWork;
 
-            public Handler(FictiveShopDbContext efDb, IInMemoryRedis redisDb, IBasketService basketService, ISupplierStockService supplierStockService, IHostEnvironment env)
+            public Handler(IRepository<Product> productsRepository,
+                           IInMemoryRedis redisDb,
+                           IBasketService basketService,
+                           ISupplierStockService supplierStockService,
+                           IHostEnvironment env,
+                           IUnitOfWork unitOfWork)
             {
-                _efDb = efDb;
+                _productsRepository = productsRepository;
                 _redisDb = redisDb;
                 _basketService = basketService;
                 _supplierStockService = supplierStockService;
                 _env = env;
+                _unitOfWork = unitOfWork;
             }
 
             public async Task<BasketUpdateResponse> Handle(Command request, CancellationToken cancellationToken)
             {
                 bool enoughItemsInStock = true, isUpdated = false;
-                var product = _efDb.Products.FirstOrDefault(x => x.Id == request.Request.ProductId);
+                var product = _productsRepository.GetById(request.Request.ProductId);
 
                 Guard.Against.Null(product, nameof(product), $"Product with ID: {request.Request.ProductId} doens't exist");
                 if (request.Request.Quantity > product.Quantity)
@@ -63,6 +70,7 @@ namespace FictiveShop.Api.Features.Basket
                     var newBasket = new CustomerBasket();
                     isUpdated = _basketService.AddToBasket(newBasket, request.Request, product);
 
+                    _unitOfWork.SaveChanges();
                     return new BasketUpdateResponse { IsBasketUpdated = isUpdated };
                 }
 
@@ -79,6 +87,8 @@ namespace FictiveShop.Api.Features.Basket
                 Guard.Against.OutOfStock(enoughItemsInStock);
 
                 isUpdated = _basketService.UpdateBasket(existingBasket, request.Request, product);
+                _unitOfWork.SaveChanges();
+
                 return new BasketUpdateResponse { IsBasketUpdated = isUpdated };
             }
 

@@ -1,9 +1,10 @@
-﻿using FictiveShop.Api.Features.Orders;
+﻿using FictiveShop.Core.Features.Orders;
 using FictiveShop.Core.Domain;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
 using Moq;
 using System.Text.Json;
+using FictiveShop.Infrastructure.DataAccess;
 
 namespace FictiveShop.Tests.Order_Tests
 {
@@ -14,6 +15,7 @@ namespace FictiveShop.Tests.Order_Tests
         private readonly Mock<IRepository<Order>> _orderRepoMock;
         private readonly Mock<IRepository<Product>> _productRepoMock;
         private readonly Mock<IRepository<Customer>> _customerRepoMock;
+        private readonly Mock<IUnitOfWork> _unitOfWork;
 
         private readonly CreateOrder.Handler _handler;
 
@@ -23,8 +25,10 @@ namespace FictiveShop.Tests.Order_Tests
             _orderRepoMock = new Mock<IRepository<Order>>();
             _productRepoMock = new Mock<IRepository<Product>>();
             _customerRepoMock = new Mock<IRepository<Customer>>();
+            _unitOfWork = new Mock<IUnitOfWork>();
 
             _handler = new CreateOrder.Handler(
+               _unitOfWork.Object,
                 _redisMock.Object,
                 _orderRepoMock.Object,
                 _productRepoMock.Object,
@@ -70,6 +74,7 @@ namespace FictiveShop.Tests.Order_Tests
                     Name = "ProductA",
                     Price = new Price() { Amount = 100, Currency = "USD" }
                 });
+            _unitOfWork.SetReturnsDefault(true);
 
             _customerRepoMock.Setup(p => p.GetById(It.IsAny<string>()))
                 .Returns(new Customer

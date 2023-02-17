@@ -1,4 +1,4 @@
-﻿using FictiveShop.Api.Features.Orders;
+﻿using FictiveShop.Core.Features.Orders;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 

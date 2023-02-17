@@ -1,5 +1,5 @@
 ﻿using Bogus;
-using FictiveShop.Api.Features.Basket;
+using FictiveShop.Core.Features.Basket;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
 using FluentAssertions;

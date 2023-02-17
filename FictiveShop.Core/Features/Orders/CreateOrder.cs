@@ -1,14 +1,18 @@
 ﻿using Ardalis.GuardClauses;
-using FictiveShop.Api.Extensions;
 using FictiveShop.Core.Domain;
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Core.ValueObjects;
 using FluentValidation;
 using MediatR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
-namespace FictiveShop.Api.Features.Orders
+namespace FictiveShop.Core.Features.Orders
 {
     public class CreateOrder
     {
@@ -37,13 +41,15 @@ namespace FictiveShop.Api.Features.Orders
         {
             private const int _4Pm = 16;
             private const int _5Pm = 17;
+            private readonly IUnitOfWork _unitOfWork;
             private readonly IInMemoryRedis _redisDb;
             private readonly IRepository<Order> _ordersRepository;
             private readonly IRepository<Product> _productsRepository;
             private readonly IRepository<Customer> _customersRepository;
 
-            public Handler(IInMemoryRedis redisDb, IRepository<Order> ordersRepository, IRepository<Product> productsRepository, IRepository<Customer> customerRepository)
+            public Handler(IUnitOfWork unitOfWork, IInMemoryRedis redisDb, IRepository<Order> ordersRepository, IRepository<Product> productsRepository, IRepository<Customer> customerRepository)
             {
+                _unitOfWork = unitOfWork;
                 _redisDb = redisDb;
                 _ordersRepository = ordersRepository;
                 _productsRepository = productsRepository;
@@ -69,6 +75,8 @@ namespace FictiveShop.Api.Features.Orders
                 UpdateQuantity(customerBasket);
 
                 ClearBasket(request);
+
+                _unitOfWork.SaveChanges();
 
                 return new()
                 {

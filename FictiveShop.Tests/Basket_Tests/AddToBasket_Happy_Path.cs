@@ -1,5 +1,5 @@
 ﻿using Bogus;
-using FictiveShop.Api.Features.Basket;
+using FictiveShop.Core.Features.Basket;
 using FictiveShop.Core.Domain;
 using FictiveShop.Core.Dtos;
 using FictiveShop.Core.Interfeces;
@@ -18,6 +18,8 @@ namespace FictiveShop.Tests.Basket_Tests
         private readonly Mock<IBasketService> _basketServiceMock;
         private readonly Mock<ISupplierStockService> _supplierStockService;
         private readonly Mock<IHostEnvironment> _env;
+        private readonly Mock<IRepository<Product>> _productsRepoMock;
+        private readonly Mock<IUnitOfWork> _unitOfWork;
 
         public AddToBasket_Happy_Path()
         {
@@ -26,6 +28,7 @@ namespace FictiveShop.Tests.Basket_Tests
             _basketServiceMock = new Mock<IBasketService>();
             _supplierStockService = new Mock<ISupplierStockService>();
             _env = new Mock<IHostEnvironment>();
+            _productsRepoMock = new Mock<IRepository<Product>>();
         }
 
         [Fact]
@@ -53,13 +56,15 @@ namespace FictiveShop.Tests.Basket_Tests
                 .Generate();
 
             _dbContext.Products.Add(product);
+            _productsRepoMock.Setup(r => r.GetById(product.Id)).Returns(product);
             _redisMock.Setup(r => r.Get(command.Request.CustomerId)).Returns(() => null).Verifiable();
             _basketServiceMock.Setup(s => s.AddToBasket(It.IsAny<CustomerBasket>(), command.Request, product)).Returns(true);
             _supplierStockService.Setup(s => s.IsAvailableInStock(product.Id, command.Request.Quantity))
                     .ReturnsAsync(true);
             _env.Setup(r => r.EnvironmentName).Returns("Test");
+            _unitOfWork.SetReturnsDefault(true);
 
-            var handler = new AddOrUpdateBasket.Handler(_dbContext, _redisMock.Object, _basketServiceMock.Object, _supplierStockService.Object, _env.Object);
+            var handler = new AddOrUpdateBasket.Handler(_productsRepoMock.Object, _redisMock.Object, _basketServiceMock.Object, _supplierStockService.Object, _env.Object, _unitOfWork.Object);
 
             // Act
             var response = await handler.Handle(command, CancellationToken.None);

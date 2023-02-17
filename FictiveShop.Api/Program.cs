@@ -8,6 +8,7 @@ using FictiveShop.Infrastructure.Repositories;
 using FictiveShop.Infrastructure.Services;
 using FluentValidation;
 using MediatR;
+using Serilog;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,9 +19,11 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<FictiveShopDbContext>();
 builder.Services.AddSingleton<IInMemoryRedis, RedisContext>();
 
-builder.Services.AddScoped<IRepository<Product>, ProductsRepository>();
-builder.Services.AddScoped<IRepository<Order>, OrdersRepository>();
-builder.Services.AddScoped<IRepository<Customer>, CustomersRepository>();
+Log.Logger = new LoggerConfiguration()
+        .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day)
+        .CreateLogger();
+builder.Services.AddSingleton(Log.Logger);
+builder.Services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 
 builder.Services.AddScoped<IBasketService, BasketService>();
 builder.Services.AddScoped<ISupplierStockService, SupplierStockService>();

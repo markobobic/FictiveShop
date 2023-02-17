@@ -12,5 +12,20 @@
                 list[index] = newItem;
             }
         }
+
+        public static HashSet<TEntity> Set<TEntity>(this List<TEntity> list)
+        {
+            return new HashSet<TEntity>(list);
+        }
+
+        public static void AddEntity<TEntity>(this List<TEntity> list, TEntity entity) where TEntity : class
+        {
+            if (entity == null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
+
+            list.Add(entity);
+        }
     }
 }

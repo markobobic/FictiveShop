@@ -1,5 +1,6 @@
 ﻿using FictiveShop.Core.Domain;
 using FictiveShop.Core.ValueObjects;
+using System;
 using System.Collections.Generic;
 
 namespace FictiveShop.Infrastructure.DataAccess
@@ -10,11 +11,30 @@ namespace FictiveShop.Infrastructure.DataAccess
         public List<Order> Orders { get; set; } = new();
         public List<Product> Products { get; set; } = new();
 
+        private Dictionary<Type, object> _tables = new Dictionary<Type, object>();
+
         public FictiveShopDbContext()
         {
             LoadCustomers();
             LoadProducts();
+            _tables.Add(typeof(Customer), Customers);
+            _tables.Add(typeof(Order), Orders);
+            _tables.Add(typeof(Product), Products);
         }
+
+        public List<TEntity> Set<TEntity>() where TEntity : BaseEntity
+        {
+            if (_tables.TryGetValue(typeof(TEntity), out object list))
+            {
+                return (List<TEntity>)list;
+            }
+            else
+            {
+                throw new ArgumentException($"Entity type {typeof(TEntity).Name} is not supported.");
+            }
+        }
+
+        public void SaveChanges() => true;
 
         private void LoadProducts()
         {
