@@ -2,7 +2,7 @@
 {
     public class CustomerBasket
     {
-        public List<BasketItem> Items { get; set; }
+        public List<BasketItem> Items { get; set; } = new();
 
         public BasketPrice GetTotalPrice(decimal discountPrecentage = 0)
         {

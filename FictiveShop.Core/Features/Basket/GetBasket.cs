@@ -1,26 +1,24 @@
 ﻿using Ardalis.GuardClauses;
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
+using FictiveShop.Core.Requests;
+using FictiveShop.Core.Responses;
 using FictiveShop.Core.ValueObjects;
 using FluentValidation;
-using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace FictiveShop.Core.Features.Basket
 {
-    public class GetBasket
+    public class GetBasketHandler : IQueryHandler<BasketGetByCustomerIdRequest, BasketGetByIdResponse>
     {
-        public class Query : IRequest<BasketResponse>
+        private readonly IInMemoryRedis _redis;
+
+        public GetBasketHandler(IInMemoryRedis redis)
         {
-            public string CustomerId { get; set; }
+            _redis = redis;
         }
 
-        public class CommandValidator : AbstractValidator<Query>
+        public class CommandValidator : AbstractValidator<BasketGetByCustomerIdRequest>
         {
             public CommandValidator()
             {
@@ -28,27 +26,12 @@ namespace FictiveShop.Core.Features.Basket
             }
         }
 
-        public class QueryHandler : IRequestHandler<Query, BasketResponse>
+        public async Task<BasketGetByIdResponse> Handle(BasketGetByCustomerIdRequest request, CancellationToken cancellationToken)
         {
-            private readonly IInMemoryRedis _redis;
-
-            public QueryHandler(IInMemoryRedis redis)
-            {
-                _redis = redis;
-            }
-
-            public async Task<BasketResponse> Handle(Query request, CancellationToken cancellationToken)
-            {
-                var basketJson = _redis.Get(request.CustomerId);
-                var customerBasket = basketJson.IsNullOrWhiteSpace() ? null : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
-                Guard.Against.Null(customerBasket, nameof(customerBasket), $"No basket found for customer with ID {request.CustomerId}");
-                return new BasketResponse { Items = customerBasket.Items };
-            }
-        }
-
-        public class BasketResponse
-        {
-            public List<BasketItem> Items { get; set; } = new List<BasketItem>();
+            var basketJson = _redis.Get(request.CustomerId);
+            var customerBasket = basketJson.IsNullOrWhiteSpace() ? null : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
+            Guard.Against.Null(customerBasket, nameof(customerBasket), $"No basket found for customer with ID {request.CustomerId}");
+            return new BasketGetByIdResponse(customerBasket.Items);
         }
     }
 }

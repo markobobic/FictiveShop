@@ -1,115 +1,106 @@
 ﻿using Ardalis.GuardClauses;
+using Castle.Core.Logging;
 using FictiveShop.Core.Domain;
-using FictiveShop.Core.Dtos;
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
+using FictiveShop.Core.Requests;
+using FictiveShop.Core.Responses;
 using FictiveShop.Core.ValueObjects;
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Text.Json;
 
 namespace FictiveShop.Core.Features.Basket
 {
-    public class AddOrUpdateBasket
+    public class AddOrUpdateBasketHandler : ICommandHandler<BasketUpdateRequest, BasketUpdateResponse>
     {
-        public class Command : IRequest<BasketUpdateResponse>
+        private readonly IRepository<Product> _productsRepository;
+        private readonly IInMemoryRedis _redisDb;
+        private readonly IBasketService _basketService;
+        private readonly IHostEnvironment _env;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<AddOrUpdateBasketHandler> _logger;
+        private readonly Mock<ISupplierStockService> _mockSupplierStockService;
+
+        public AddOrUpdateBasketHandler(IRepository<Product> productsRepository,
+                       IInMemoryRedis redisDb,
+                       IBasketService basketService,
+                       IHostEnvironment env,
+                       IUnitOfWork unitOfWork,
+                       ILogger<AddOrUpdateBasketHandler> logger)
         {
-            public BasketUpdateDto Request { get; set; }
+            _productsRepository = productsRepository;
+            _redisDb = redisDb;
+            _basketService = basketService;
+            _mockSupplierStockService = new Mock<ISupplierStockService>();
+            _env = env;
+            _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
-        public class CommandValidator : AbstractValidator<Command>
+        public class CommandValidator : AbstractValidator<BasketUpdateRequest>
         {
             public CommandValidator()
             {
-                RuleFor(x => x.Request.ProductId).NotNull().NotEmpty();
-                RuleFor(x => x.Request.Quantity).GreaterThan(0);
+                RuleFor(x => x.ProductId).NotNull().NotEmpty();
+                RuleFor(x => x.Quantity).GreaterThan(0);
             }
         }
 
-        public class Handler : IRequestHandler<Command, BasketUpdateResponse>
+        public async Task<BasketUpdateResponse> Handle(BasketUpdateRequest request, CancellationToken cancellationToken)
         {
-            private readonly IRepository<Product> _productsRepository;
-            private readonly IInMemoryRedis _redisDb;
-            private readonly IBasketService _basketService;
-            private readonly ISupplierStockService _supplierStockService;
-            private readonly IHostEnvironment _env;
-            private readonly IUnitOfWork _unitOfWork;
+            bool enoughItemsInStock = true, isUpdated = false;
+            var product = _productsRepository.GetById(request.ProductId);
 
-            public Handler(IRepository<Product> productsRepository,
-                           IInMemoryRedis redisDb,
-                           IBasketService basketService,
-                           ISupplierStockService supplierStockService,
-                           IHostEnvironment env,
-                           IUnitOfWork unitOfWork)
+            Guard.Against.Null(product, nameof(product), $"Product with ID: {request.ProductId} doens't exist");
+            if (request.Quantity > product.Quantity)
             {
-                _productsRepository = productsRepository;
-                _redisDb = redisDb;
-                _basketService = basketService;
-                _supplierStockService = supplierStockService;
-                _env = env;
-                _unitOfWork = unitOfWork;
+                enoughItemsInStock = await CallToExternalStock(request, enoughItemsInStock, product);
             }
 
-            public async Task<BasketUpdateResponse> Handle(Command request, CancellationToken cancellationToken)
+            Guard.Against.OutOfStock(enoughItemsInStock);
+
+            if (_redisDb.Get(request.CustomerId) is null)
             {
-                bool enoughItemsInStock = true, isUpdated = false;
-                var product = _productsRepository.GetById(request.Request.ProductId);
+                var newBasket = new CustomerBasket();
+                isUpdated = _basketService.AddToBasket(newBasket, request, product);
 
-                Guard.Against.Null(product, nameof(product), $"Product with ID: {request.Request.ProductId} doens't exist");
-                if (request.Request.Quantity > product.Quantity)
-                {
-                    enoughItemsInStock = await CallToExternalStock(request, enoughItemsInStock, product);
-                }
-
-                Guard.Against.OutOfStock(enoughItemsInStock);
-
-                if (_redisDb.Get(request.Request.CustomerId) is null)
-                {
-                    var newBasket = new CustomerBasket();
-                    isUpdated = _basketService.AddToBasket(newBasket, request.Request, product);
-
-                    _unitOfWork.SaveChanges();
-                    return new BasketUpdateResponse { IsBasketUpdated = isUpdated };
-                }
-
-                var basketData = _redisDb.Get(request.Request.CustomerId);
-                var existingBasket = JsonSerializer.Deserialize<CustomerBasket>(basketData);
-                var existingProduct = existingBasket.Items.FirstOrDefault(x => x.ProductId == request.Request.ProductId);
-
-                var existingProductQuantity = existingProduct?.Quantity ?? 0;
-                if (existingProductQuantity + request.Request.Quantity > product.Quantity)
-                {
-                    enoughItemsInStock = await CallToExternalStock(request, enoughItemsInStock, product);
-                }
-
-                Guard.Against.OutOfStock(enoughItemsInStock);
-
-                isUpdated = _basketService.UpdateBasket(existingBasket, request.Request, product);
                 _unitOfWork.SaveChanges();
-
-                return new BasketUpdateResponse { IsBasketUpdated = isUpdated };
+                return new BasketUpdateResponse(isUpdated);
             }
 
-            private async Task<bool> CallToExternalStock(Command request, bool enoughItemsInStock, Product product)
+            var basketData = _redisDb.Get(request.CustomerId);
+            var existingBasket = JsonSerializer.Deserialize<CustomerBasket>(basketData);
+            var existingProduct = existingBasket.Items.FirstOrDefault(x => x.ProductId == request.ProductId);
+
+            var existingProductQuantity = existingProduct?.Quantity ?? 0;
+            if (existingProductQuantity + request.Quantity > product.Quantity)
             {
-                if (_env.IsEnvironment("Test"))
-                {
-                    return await _supplierStockService.IsAvailableInStock(product.Id, request.Request.Quantity);
-                }
-                var mockSupplierStockService = new Mock<ISupplierStockService>();
-                mockSupplierStockService
-                    .Setup(s => s.IsAvailableInStock(product.Id, request.Request.Quantity))
-                    .ReturnsAsync(false);
-                enoughItemsInStock = await mockSupplierStockService.Object.IsAvailableInStock(product.Id, product.Quantity);
-                return enoughItemsInStock;
+                enoughItemsInStock = await CallToExternalStock(request, enoughItemsInStock, product);
             }
+
+            Guard.Against.OutOfStock(enoughItemsInStock);
+
+            isUpdated = _basketService.UpdateBasket(existingBasket, request, product);
+            _unitOfWork.SaveChanges();
+
+            return new BasketUpdateResponse(isUpdated);
         }
 
-        public class BasketUpdateResponse
+        private async Task<bool> CallToExternalStock(BasketUpdateRequest request, bool enoughItemsInStock, Product product)
         {
-            public bool IsBasketUpdated { get; set; }
+            var availableInExternalStock = _env.IsEnvironment("Test");
+            _logger.LogInformation("Call to external service started: ");
+            _mockSupplierStockService
+                .Setup(s => s.IsAvailableInStock(product.Id, request.Quantity))
+                .ReturnsAsync(availableInExternalStock);
+
+            enoughItemsInStock = await _mockSupplierStockService.Object.IsAvailableInStock(product.Id, request.Quantity);
+            _logger.LogInformation($"Response from external service:{enoughItemsInStock} ");
+
+            return enoughItemsInStock;
         }
     }
 }

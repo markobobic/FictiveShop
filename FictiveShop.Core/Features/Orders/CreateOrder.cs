@@ -2,34 +2,49 @@
 using FictiveShop.Core.Domain;
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
+using FictiveShop.Core.Requests;
+using FictiveShop.Core.Responses;
 using FictiveShop.Core.ValueObjects;
 using FluentValidation;
-using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace FictiveShop.Core.Features.Orders
 {
-    public class CreateOrder
+    public class CreateOrderHandler : ICommandHandler<OrderRequest, OrderCreatedResponse>
     {
-        public class Command : IRequest<OrderCreatedResponse>
+        private const int _4Pm = 16;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IInMemoryRedis _redisDb;
+        private readonly IRepository<Order> _ordersRepository;
+        private readonly IRepository<Product> _productsRepository;
+        private readonly IRepository<Customer> _customersRepository;
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        public CreateOrderHandler(
+            IUnitOfWork unitOfWork,
+            IInMemoryRedis redisDb,
+            IRepository<Order> ordersRepository,
+            IRepository<Product> productsRepository,
+            IRepository<Customer> customerRepository,
+            IDateTimeProvider dateTimeProvider)
         {
-            public OrderRequest Request { get; set; }
+            _unitOfWork = unitOfWork;
+            _redisDb = redisDb;
+            _ordersRepository = ordersRepository;
+            _productsRepository = productsRepository;
+            _customersRepository = customerRepository;
+            _dateTimeProvider = dateTimeProvider;
         }
 
-        public class CommandValidator : AbstractValidator<Command>
+        public class CommandValidator : AbstractValidator<OrderRequest>
         {
             public CommandValidator()
             {
-                RuleFor(x => x.Request.AddressRequest.City).NotNull().NotEmpty().WithMessage("City isn't populated.");
-                RuleFor(x => x.Request.AddressRequest.HouseNumber).NotNull().NotEmpty().WithMessage("HouseNumber isn't populated.");
-                RuleFor(x => x.Request.AddressRequest.Street).NotNull().NotEmpty().WithMessage("Street isn't populated.");
-                RuleFor(x => x.Request.PhoneNumber).NotNull().NotEmpty().WithMessage("Phone isn't populated."); ;
-                RuleFor(x => x.Request.CustomerId)
+                RuleFor(x => x.AddressRequest.City).NotNull().NotEmpty().WithMessage("City isn't populated.");
+                RuleFor(x => x.AddressRequest.HouseNumber).NotNull().NotEmpty().WithMessage("HouseNumber isn't populated.");
+                RuleFor(x => x.AddressRequest.Street).NotNull().NotEmpty().WithMessage("Street isn't populated.");
+                RuleFor(x => x.PhoneNumber).NotNull().NotEmpty().WithMessage("Phone isn't populated."); ;
+                RuleFor(x => x.CustomerId)
                     .NotEmpty()
                     .NotNull()
                     .Must(customerId => Guid.TryParse(customerId, out _))
@@ -37,108 +52,62 @@ namespace FictiveShop.Core.Features.Orders
             }
         }
 
-        public class Handler : IRequestHandler<Command, OrderCreatedResponse>
+        public async Task<OrderCreatedResponse> Handle(OrderRequest request, CancellationToken cancellationToken)
         {
-            private const int _4Pm = 16;
-            private const int _5Pm = 17;
-            private readonly IUnitOfWork _unitOfWork;
-            private readonly IInMemoryRedis _redisDb;
-            private readonly IRepository<Order> _ordersRepository;
-            private readonly IRepository<Product> _productsRepository;
-            private readonly IRepository<Customer> _customersRepository;
+            var basketJson = _redisDb.Get(request.CustomerId);
+            var customerBasket = basketJson.IsNullOrWhiteSpace()
+                ? null
+                : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
 
-            public Handler(IUnitOfWork unitOfWork, IInMemoryRedis redisDb, IRepository<Order> ordersRepository, IRepository<Product> productsRepository, IRepository<Customer> customerRepository)
+            Guard.Against.Null(basketJson, nameof(basketJson), "Customer basket doesn't exists.");
+
+            var discountPercentage = GetDiscountPrecentage(request);
+
+            _customersRepository.Create(request.ToCustomer());
+
+            var order = request.ToOrder(customerBasket, discountPercentage);
+            _ordersRepository.Create(order);
+
+            UpdateQuantity(customerBasket);
+
+            ClearBasket(request);
+
+            _unitOfWork.SaveChanges();
+
+            return new(order.Id, order.TotalAmount, order.AppliedDiscount);
+        }
+
+        private void UpdateQuantity(CustomerBasket customerBasket)
+        {
+            foreach (var basketItem in customerBasket.Items)
             {
-                _unitOfWork = unitOfWork;
-                _redisDb = redisDb;
-                _ordersRepository = ordersRepository;
-                _productsRepository = productsRepository;
-                _customersRepository = customerRepository;
+                var product = _productsRepository.GetById(basketItem.ProductId);
+
+                if (product is null)
+                    Guard.Against.Null(product, nameof(product), "Product in orderded items is null.");
+
+                product.Quantity -= basketItem.Quantity;
+                _productsRepository.Update(product);
             }
+        }
 
-            public async Task<OrderCreatedResponse> Handle(Command request, CancellationToken cancellationToken)
+        private void ClearBasket(OrderRequest request) => _redisDb.Delete(request.CustomerId);
+
+        private decimal GetDiscountPrecentage(OrderRequest request)
+        {
+            var hour = _dateTimeProvider.GetNow().Hour;
+            if (hour == _4Pm)
             {
-                var basketJson = _redisDb.Get(request.Request.CustomerId);
-                var customerBasket = basketJson.IsNullOrWhiteSpace()
-                    ? null
-                    : JsonSerializer.Deserialize<CustomerBasket>(basketJson);
-
-                Guard.Against.Null(basketJson, nameof(basketJson), "Customer basket doesn't exists.");
-
-                var discountPercentage = GetDiscountPrecentage(customerBasket, request.Request);
-
-                _customersRepository.Create(request.Request.ToCustomer());
-
-                var order = request.ToOrder(customerBasket, discountPercentage);
-                _ordersRepository.Create(order);
-
-                UpdateQuantity(customerBasket);
-
-                ClearBasket(request);
-
-                _unitOfWork.SaveChanges();
-
-                return new()
+                var lastDigit = request.PhoneNumber.ExtractNumber().Last().ToString().ToInt();
+                return lastDigit switch
                 {
-                    AppliedDiscount = order.AppliedDiscount,
-                    OrderId = order.Id,
-                    TotalAmount = order.TotalAmount
+                    0 => 0.3m,
+                    var digit when digit % 2 == 0 => 0.2m,
+                    var digit when digit % 2 == 1 => 0.1m,
+                    _ => 0m
                 };
             }
-
-            private void UpdateQuantity(CustomerBasket customerBasket)
-            {
-                foreach (var basketItem in customerBasket.Items)
-                {
-                    var product = _productsRepository.GetById(basketItem.ProductId);
-
-                    if (product is null)
-                        Guard.Against.Null(product, nameof(product), "Product in orderded items is null.");
-
-                    product.Quantity -= basketItem.Quantity;
-                    _productsRepository.Update(product);
-                }
-            }
-
-            private void ClearBasket(Command request) => _redisDb.Delete(request.Request.CustomerId);
-
-            private decimal GetDiscountPrecentage(CustomerBasket customerBasket, OrderRequest request)
-            {
-                var hour = DateTime.Now.Hour;
-                if (hour == _4Pm || hour == _5Pm)
-                {
-                    var lastDigit = request.PhoneNumber.ExtractNumber().Last().ToString().ToInt();
-                    return lastDigit switch
-                    {
-                        0 => 0.3m,
-                        var digit when digit % 2 == 0 => 0.2m,
-                        var digit when digit % 2 == 1 => 0.1m,
-                        _ => 0m
-                    };
-                }
-                return 0;
-            }
-        }
-
-        public class OrderCreatedResponse
-        {
-            public string OrderId { get; set; }
-            public decimal TotalAmount { get; set; }
-            public decimal AppliedDiscount { get; set; }
-        }
-
-        public class OrderRequest
-        {
-            public string CustomerId { get; set; }
-            public AddressRequest AddressRequest { get; set; }
-            public string PhoneNumber { get; set; }
-        }
-
-        public class AddressRequest
-        {
-            public string City { get; set; }
-            public string HouseNumber { get; set; }
-            public string Street { get; set; }
+            return 0;
         }
     }
 }

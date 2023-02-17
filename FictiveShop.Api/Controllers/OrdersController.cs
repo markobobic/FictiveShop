@@ -1,4 +1,5 @@
 ﻿using FictiveShop.Core.Features.Orders;
+using FictiveShop.Core.Requests;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,9 +17,9 @@ namespace FictiveShop.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PostOrder(CreateOrder.OrderRequest request)
+        public async Task<IActionResult> PostOrder(OrderRequest request)
         {
-            var order = await _mediator.Send(new CreateOrder.Command { Request = request });
+            var order = await _mediator.Send(request);
 
             return Ok(order);
         }

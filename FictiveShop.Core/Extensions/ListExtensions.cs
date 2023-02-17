@@ -1,10 +1,12 @@
-﻿namespace FictiveShop.Core.Extensions
+﻿using Ardalis.GuardClauses;
+
+namespace FictiveShop.Core.Extensions
 {
     public static class ListExtensions
     {
         public static void ReplaceOne<T>(this List<T> list, T newItem, T oldItem)
         {
-            if (list is null) return;
+            if (list is null) Guard.Against.Null(list, nameof(list), $"Db collection {typeof(T)} cannot be null.");
             int index = list.IndexOf(oldItem);
 
             if (index != -1)
@@ -13,19 +15,6 @@
             }
         }
 
-        public static HashSet<TEntity> Set<TEntity>(this List<TEntity> list)
-        {
-            return new HashSet<TEntity>(list);
-        }
-
-        public static void AddEntity<TEntity>(this List<TEntity> list, TEntity entity) where TEntity : class
-        {
-            if (entity == null)
-            {
-                throw new ArgumentNullException(nameof(entity));
-            }
-
-            list.Add(entity);
-        }
+        public static HashSet<TEntity> Set<TEntity>(this List<TEntity> list) => new HashSet<TEntity>(list);
     }
 }

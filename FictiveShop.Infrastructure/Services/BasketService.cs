@@ -1,6 +1,6 @@
 ﻿using FictiveShop.Core.Domain;
-using FictiveShop.Core.Dtos;
 using FictiveShop.Core.Interfeces;
+using FictiveShop.Core.Requests;
 using FictiveShop.Core.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -19,7 +19,7 @@ namespace FictiveShop.Infrastructure.Services
             _redisDb = redisDb;
         }
 
-        public bool UpdateBasket(CustomerBasket customerBasket, BasketUpdateDto request, Product product)
+        public bool UpdateBasket(CustomerBasket customerBasket, BasketUpdateRequest request, Product product)
         {
             var updateProduct = customerBasket.Items.FirstOrDefault(x => x.ProductId == product.Id);
             if (updateProduct is not null)
@@ -43,7 +43,7 @@ namespace FictiveShop.Infrastructure.Services
                                     TimeSpan.FromDays(ThirtyDays));
         }
 
-        public bool AddToBasket(CustomerBasket customerBasket, BasketUpdateDto request, Product product)
+        public bool AddToBasket(CustomerBasket customerBasket, BasketUpdateRequest request, Product product)
         {
             bool isUpdated;
 

@@ -34,7 +34,7 @@ namespace FictiveShop.Infrastructure.DataAccess
             }
         }
 
-        public void SaveChanges() => true;
+        public bool SaveChanges() => true;
 
         private void LoadProducts()
         {

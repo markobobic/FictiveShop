@@ -1,24 +1,24 @@
 ﻿using Bogus;
 using FictiveShop.Core.Features.Basket;
 using FictiveShop.Core.Interfeces;
+using FictiveShop.Core.Requests;
 using FictiveShop.Core.ValueObjects;
 using FluentAssertions;
 using Moq;
 using System.Text.Json;
-using Xunit;
 
 namespace FictiveShop.Tests.Basket_Tests
 {
     [Trait("Get Basket", "Happy Path")]
-    public class GetBasket_Happy_Path
+    public class GetBasket_HappyPath
     {
         private readonly Mock<IInMemoryRedis> _mockRedis;
-        private readonly GetBasket.QueryHandler _handler;
+        private readonly GetBasketHandler _handler;
 
-        public GetBasket_Happy_Path()
+        public GetBasket_HappyPath()
         {
             _mockRedis = new Mock<IInMemoryRedis>();
-            _handler = new GetBasket.QueryHandler(_mockRedis.Object);
+            _handler = new GetBasketHandler(_mockRedis.Object);
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace FictiveShop.Tests.Basket_Tests
             };
             _mockRedis.Setup(x => x.Get(customerId)).Returns(JsonSerializer.Serialize(customerBasket));
 
-            var query = new GetBasket.Query { CustomerId = customerId };
+            var query = new BasketGetByCustomerIdRequest(customerId);
 
             // Act
             var result = await _handler.Handle(query, CancellationToken.None);

@@ -1,6 +1,6 @@
 ﻿using FictiveShop.Core.Domain;
+using FictiveShop.Core.Requests;
 using FictiveShop.Core.ValueObjects;
-using static FictiveShop.Core.Features.Orders.CreateOrder;
 
 namespace FictiveShop.Core.Extensions
 {
@@ -18,20 +18,20 @@ namespace FictiveShop.Core.Extensions
             }
         };
 
-        public static Order ToOrder(this Command request, CustomerBasket customerBasket, decimal discountPercentage)
+        public static Order ToOrder(this OrderRequest request, CustomerBasket customerBasket, decimal discountPercentage)
         {
             var basketPrice = customerBasket.GetTotalPrice(discountPercentage);
             return new Order
             {
                 TotalAmount = basketPrice.TotalPrice,
-                CustomerId = request.Request.CustomerId,
+                CustomerId = request.CustomerId,
                 AppliedDiscount = basketPrice.DiscountedPrice,
                 BasketItems = customerBasket.Items,
                 ShippingAddress = new Address
                 {
-                    City = request.Request.AddressRequest.City,
-                    HouseNumber = request.Request.AddressRequest.HouseNumber,
-                    Street = request.Request.AddressRequest.Street
+                    City = request.AddressRequest.City,
+                    HouseNumber = request.AddressRequest.HouseNumber,
+                    Street = request.AddressRequest.Street
                 }
             };
         }
