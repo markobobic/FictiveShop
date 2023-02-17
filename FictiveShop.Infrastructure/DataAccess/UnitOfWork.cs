@@ -1,7 +1,4 @@
-﻿using FictiveShop.Core.Domain;
-using FictiveShop.Core.Interfeces;
-using FictiveShop.Infrastructure.Repositories;
-using System;
+﻿using FictiveShop.Core.Interfeces;
 using System.Threading.Tasks;
 
 namespace FictiveShop.Infrastructure.DataAccess

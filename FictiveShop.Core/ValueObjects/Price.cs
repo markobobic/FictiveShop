@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-namespace FictiveShop.Core.ValueObjects
+﻿namespace FictiveShop.Core.ValueObjects
 {
     public class Price : ValueObject
     {

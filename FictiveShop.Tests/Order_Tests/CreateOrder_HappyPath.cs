@@ -1,10 +1,10 @@
-﻿using FictiveShop.Core.Features.Orders;
-using FictiveShop.Core.Domain;
+﻿using FictiveShop.Core.Domain;
+using FictiveShop.Core.Features.Orders;
 using FictiveShop.Core.Interfeces;
+using FictiveShop.Core.Requests;
 using FictiveShop.Core.ValueObjects;
 using Moq;
 using System.Text.Json;
-using FictiveShop.Core.Requests;
 
 namespace FictiveShop.Tests.Order_Tests
 {

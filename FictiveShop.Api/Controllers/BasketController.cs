@@ -1,5 +1,4 @@
-﻿using FictiveShop.Core.Features.Basket;
-using FictiveShop.Core.Requests;
+﻿using FictiveShop.Core.Requests;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 

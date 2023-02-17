@@ -1,14 +1,14 @@
 ﻿using Bogus;
-using FictiveShop.Core.Features.Basket;
 using FictiveShop.Core.Domain;
+using FictiveShop.Core.Features.Basket;
 using FictiveShop.Core.Interfeces;
+using FictiveShop.Core.Requests;
 using FictiveShop.Core.ValueObjects;
 using FictiveShop.Infrastructure.DataAccess;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Text.Json;
-using FictiveShop.Core.Requests;
-using Microsoft.Extensions.Logging;
 
 namespace FictiveShop.Tests.Basket_Tests
 {

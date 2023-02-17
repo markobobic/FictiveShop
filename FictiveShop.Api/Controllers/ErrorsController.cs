@@ -1,5 +1,4 @@
 ﻿using FictiveShop.Core.Responses;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FictiveShop.Api.Controllers

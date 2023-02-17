@@ -1,5 +1,4 @@
 ﻿using Ardalis.GuardClauses;
-using Castle.Core.Logging;
 using FictiveShop.Core.Domain;
 using FictiveShop.Core.Extensions;
 using FictiveShop.Core.Interfeces;
