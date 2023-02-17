@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Moq;
 using System.Text.Json;
 using FictiveShop.Core.Requests;
+using Microsoft.Extensions.Logging;
 
 namespace FictiveShop.Tests.Basket_Tests
 {
@@ -20,15 +21,17 @@ namespace FictiveShop.Tests.Basket_Tests
         private readonly Mock<IHostEnvironment> _env;
         private readonly Mock<IRepository<Product>> _productsRepoMock;
         private readonly Mock<IUnitOfWork> _unitOfWork;
+        private readonly Mock<ILogger<AddOrUpdateBasket>> _logger;
 
         public UpdateBasket_HappyPath()
         {
-            _dbContext = new FictiveShopDbContext();
-            _redisMock = new Mock<IInMemoryRedis>();
-            _basketServiceMock = new Mock<IBasketService>();
-            _env = new Mock<IHostEnvironment>();
-            _productsRepoMock = new Mock<IRepository<Product>>();
-            _unitOfWork = new Mock<IUnitOfWork>();
+            _dbContext = new();
+            _redisMock = new();
+            _basketServiceMock = new();
+            _env = new();
+            _productsRepoMock = new();
+            _unitOfWork = new();
+            _logger = new();
         }
 
         [Fact]
@@ -64,7 +67,7 @@ namespace FictiveShop.Tests.Basket_Tests
             _env.Setup(r => r.EnvironmentName).Returns("Test");
             _unitOfWork.SetReturnsDefault(true);
 
-            var handler = new AddOrUpdateBasketHandler(_productsRepoMock.Object, _redisMock.Object, _basketServiceMock.Object, _env.Object, _unitOfWork.Object);
+            var handler = new AddOrUpdateBasket(_productsRepoMock.Object, _redisMock.Object, _basketServiceMock.Object, _env.Object, _unitOfWork.Object, _logger.Object);
 
             // Act
             var response = await handler.Handle(request, CancellationToken.None);

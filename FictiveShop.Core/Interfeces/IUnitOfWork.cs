@@ -4,6 +4,6 @@ namespace FictiveShop.Core.Interfeces
 {
     public interface IUnitOfWork
     {
-        bool SaveChanges();
+        Task<bool> SaveChangesAsync();
     }
 }

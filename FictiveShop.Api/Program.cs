@@ -25,10 +25,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddSingleton(Log.Logger);
 builder.Services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 
-builder.Services.AddLogging(loggingBuilder =>
-{
-    loggingBuilder.AddSerilog();
-});
+builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog());
 
 builder.Services.AddScoped<IBasketService, BasketService>();
 builder.Services.AddScoped<ISupplierStockService, SupplierStockService>();

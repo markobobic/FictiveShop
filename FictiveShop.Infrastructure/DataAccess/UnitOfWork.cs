@@ -2,6 +2,7 @@
 using FictiveShop.Core.Interfeces;
 using FictiveShop.Infrastructure.Repositories;
 using System;
+using System.Threading.Tasks;
 
 namespace FictiveShop.Infrastructure.DataAccess
 {
@@ -14,6 +15,6 @@ namespace FictiveShop.Infrastructure.DataAccess
             this._context = _context;
         }
 
-        public bool SaveChanges() => _context.SaveChanges();
+        public async Task<bool> SaveChangesAsync() => await _context.SaveChanges();
     }
 }

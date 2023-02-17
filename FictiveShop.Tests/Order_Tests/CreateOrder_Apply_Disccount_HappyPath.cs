@@ -18,7 +18,7 @@ namespace FictiveShop.Tests.Order_Tests
         private readonly Mock<IUnitOfWork> _unitOfWork;
         private readonly Mock<IDateTimeProvider> _dateTimeProvider;
 
-        private readonly CreateOrderHandler _handler;
+        private readonly CreateOrder _handler;
 
         public CreateOrder_Apply_Disccount_HappyPath()
         {
@@ -29,7 +29,7 @@ namespace FictiveShop.Tests.Order_Tests
             _unitOfWork = new();
             _dateTimeProvider = new();
 
-            _handler = new CreateOrderHandler(
+            _handler = new CreateOrder(
                _unitOfWork.Object,
                 _redisMock.Object,
                 _orderRepoMock.Object,

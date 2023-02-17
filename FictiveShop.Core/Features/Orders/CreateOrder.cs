@@ -10,7 +10,7 @@ using System.Text.Json;
 
 namespace FictiveShop.Core.Features.Orders
 {
-    public class CreateOrderHandler : ICommandHandler<OrderRequest, OrderCreatedResponse>
+    public class CreateOrder : ICommandHandler<OrderRequest, OrderCreatedResponse>
     {
         private const int _4Pm = 16;
         private readonly IUnitOfWork _unitOfWork;
@@ -20,7 +20,7 @@ namespace FictiveShop.Core.Features.Orders
         private readonly IRepository<Customer> _customersRepository;
         private readonly IDateTimeProvider _dateTimeProvider;
 
-        public CreateOrderHandler(
+        public CreateOrder(
             IUnitOfWork unitOfWork,
             IInMemoryRedis redisDb,
             IRepository<Order> ordersRepository,
@@ -72,7 +72,7 @@ namespace FictiveShop.Core.Features.Orders
 
             ClearBasket(request);
 
-            _unitOfWork.SaveChanges();
+            await _unitOfWork.SaveChangesAsync();
 
             return new(order.Id, order.TotalAmount, order.AppliedDiscount);
         }

@@ -7,6 +7,7 @@ using FictiveShop.Infrastructure.DataAccess;
 using Microsoft.Extensions.Hosting;
 using Moq;
 using FictiveShop.Core.Requests;
+using Microsoft.Extensions.Logging;
 
 namespace FictiveShop.Tests.Basket_Tests
 {
@@ -22,12 +23,12 @@ namespace FictiveShop.Tests.Basket_Tests
 
         public AddToBasket_HappyPath()
         {
-            _dbContext = new FictiveShopDbContext();
-            _redisMock = new Mock<IInMemoryRedis>();
-            _basketServiceMock = new Mock<IBasketService>();
-            _env = new Mock<IHostEnvironment>();
-            _productsRepoMock = new Mock<IRepository<Product>>();
-            _unitOfWork = new Mock<IUnitOfWork>();
+            _redisMock = new();
+            _basketServiceMock = new();
+            _env = new();
+            _productsRepoMock = new();
+            _unitOfWork = new();
+            _dbContext = new();
         }
 
         [Fact]
@@ -63,7 +64,11 @@ namespace FictiveShop.Tests.Basket_Tests
             _env.Setup(r => r.EnvironmentName).Returns("Test");
             _unitOfWork.SetReturnsDefault(true);
 
-            var handler = new AddOrUpdateBasketHandler(_productsRepoMock.Object, _redisMock.Object, _basketServiceMock.Object, _env.Object, _unitOfWork.Object);
+            var handler = new AddOrUpdateBasket(_productsRepoMock.Object,
+                                                       _redisMock.Object,
+                                                       _basketServiceMock.Object,
+                                                       _env.Object,
+                                                       _unitOfWork.Object);
 
             // Act
             var response = await handler.Handle(request, CancellationToken.None);

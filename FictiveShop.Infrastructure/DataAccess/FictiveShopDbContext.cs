@@ -2,6 +2,7 @@
 using FictiveShop.Core.ValueObjects;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace FictiveShop.Infrastructure.DataAccess
 {
@@ -34,7 +35,7 @@ namespace FictiveShop.Infrastructure.DataAccess
             }
         }
 
-        public bool SaveChanges() => true;
+        public Task<bool> SaveChanges() => Task.FromResult(true);
 
         private void LoadProducts()
         {

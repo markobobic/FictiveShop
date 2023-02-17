@@ -14,22 +14,22 @@ using System.Text.Json;
 
 namespace FictiveShop.Core.Features.Basket
 {
-    public class AddOrUpdateBasketHandler : ICommandHandler<BasketUpdateRequest, BasketUpdateResponse>
+    public class AddOrUpdateBasket : ICommandHandler<BasketUpdateRequest, BasketUpdateResponse>
     {
         private readonly IRepository<Product> _productsRepository;
         private readonly IInMemoryRedis _redisDb;
         private readonly IBasketService _basketService;
         private readonly IHostEnvironment _env;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<AddOrUpdateBasketHandler> _logger;
+        private readonly ILogger<AddOrUpdateBasket> _logger;
         private readonly Mock<ISupplierStockService> _mockSupplierStockService;
 
-        public AddOrUpdateBasketHandler(IRepository<Product> productsRepository,
+        public AddOrUpdateBasket(IRepository<Product> productsRepository,
                        IInMemoryRedis redisDb,
                        IBasketService basketService,
                        IHostEnvironment env,
                        IUnitOfWork unitOfWork,
-                       ILogger<AddOrUpdateBasketHandler> logger)
+                       ILogger<AddOrUpdateBasket> logger = null)
         {
             _productsRepository = productsRepository;
             _redisDb = redisDb;
@@ -67,7 +67,7 @@ namespace FictiveShop.Core.Features.Basket
                 var newBasket = new CustomerBasket();
                 isUpdated = _basketService.AddToBasket(newBasket, request, product);
 
-                _unitOfWork.SaveChanges();
+                await _unitOfWork.SaveChangesAsync();
                 return new BasketUpdateResponse(isUpdated);
             }
 
@@ -84,7 +84,7 @@ namespace FictiveShop.Core.Features.Basket
             Guard.Against.OutOfStock(enoughItemsInStock);
 
             isUpdated = _basketService.UpdateBasket(existingBasket, request, product);
-            _unitOfWork.SaveChanges();
+            await _unitOfWork.SaveChangesAsync();
 
             return new BasketUpdateResponse(isUpdated);
         }
@@ -92,13 +92,13 @@ namespace FictiveShop.Core.Features.Basket
         private async Task<bool> CallToExternalStock(BasketUpdateRequest request, bool enoughItemsInStock, Product product)
         {
             var availableInExternalStock = _env.IsEnvironment("Test");
-            _logger.LogInformation("Call to external service started: ");
+            _logger?.LogInformation("Call to external service started: ");
             _mockSupplierStockService
                 .Setup(s => s.IsAvailableInStock(product.Id, request.Quantity))
                 .ReturnsAsync(availableInExternalStock);
 
             enoughItemsInStock = await _mockSupplierStockService.Object.IsAvailableInStock(product.Id, request.Quantity);
-            _logger.LogInformation($"Response from external service:{enoughItemsInStock} ");
+            _logger?.LogInformation($"Response from external service:{enoughItemsInStock} ");
 
             return enoughItemsInStock;
         }
